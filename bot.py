@@ -8,7 +8,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 
 TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "123456789"))
+ADMIN_ID = int(os.getenv("ADMIN_ID", "8337495954"))
 if not TOKEN:
     print("ERROR: Set BOT_TOKEN environment variable!")
     exit(1)
@@ -454,4 +454,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
