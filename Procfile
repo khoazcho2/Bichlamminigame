@@ -1,1 +1,1 @@
-worker: python botminigame_fixed.py
+worker: python bot.py
