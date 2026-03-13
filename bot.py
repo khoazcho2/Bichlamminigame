@@ -3,54 +3,49 @@ import asyncio
 import json
 import edge_tts
 import os
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
+from aiogram.enums import ParseMode
 
 TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "8337495954"))
-if not TOKEN:
-    print("ERROR: Set BOT_TOKEN environment variable!")
-    exit(1)
+ADMIN_ID = int(os.getenv("ADMIN_ID","8337495954"))
 
-bot = Bot(TOKEN)
+bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher()
 
-DATA_FILE = "data.json"
+DATA_FILE="data.json"
 
 # ================= DATA =================
 
 def load():
     try:
-        with open(DATA_FILE) as f:
+        with open(DATA_FILE,encoding="utf-8") as f:
             return json.load(f)
     except:
-        return {"users":{}, "boss": {"hp":0, "active":False}}
+        return {"users":{}, "boss":{"hp":0,"active":False}}
 
 def save(data):
-    with open(DATA_FILE,"w") as f:
-        json.dump(data,f)
+    with open(DATA_FILE,"w",encoding="utf-8") as f:
+        json.dump(data,f,indent=2)
 
-data = load()
+data=load()
 
 def get_user(uid):
     uid=str(uid)
     if uid not in data["users"]:
-        data["users"][uid]={
-            "xu":1000,
-            "bank":0
-        }
+        data["users"][uid]={"xu":1000,"bank":0}
     return data["users"][uid]
 
 # ================= START =================
 
-@dp.message(Command("start"))
+@dp.message(Command("start",ignore_mention=True))
 async def start(msg: types.Message):
+
     await msg.reply("""
-🎮 **CASINO GAME BOT**
+🎮 <b>CASINO GAME BOT</b>
 
-━━━━━━━━━━━━━━
-
-🎲 /taixiu [tài/xỉu] <amount>
+🎲 /taixiu tài 100
 🎰 /slot
 🃏 /blackjack
 ♠️ /poker
@@ -59,55 +54,62 @@ async def start(msg: types.Message):
 🐉 /boss
 
 🏦 /bank
-🏦 /gui <amount>
-🏧 /rut <amount>
+🏦 /gui 100
+🏧 /rut 50
 
-💸 /chuyentien @user <amount>
-👑 /addtien @user <amount>
+💸 reply /chuyentien 100
+👑 reply /addtien 500
 
 🏆 /top
 👤 /profile
 
-🎤 /say <text>
-
-━━━━━━━━━━━━━━
-✨ Chúc bạn may mắn!
+🎤 /say Xin chào
 """)
 
 # ================= PROFILE =================
 
-@dp.message(Command("profile"))
+@dp.message(Command("profile",ignore_mention=True))
 async def profile(msg: types.Message):
-    user=get_user(msg.from_user.id)
-    await msg.reply(f"""
-👤 **THÔNG TIN NGƯỜI CHƠI**
 
-💰 Xu: **{user["xu"]}**
-🏦 Ngân hàng: **{user["bank"]}**
+    user=get_user(msg.from_user.id)
+
+    await msg.reply(f"""
+👤 PROFILE
+
+💰 Xu: {user["xu"]}
+🏦 Bank: {user["bank"]}
 """)
 
 # ================= SLOT =================
 
-@dp.message(Command("slot"))
+@dp.message(Command("slot",ignore_mention=True))
 async def slot(msg: types.Message):
+
     user=get_user(msg.from_user.id)
-    if user["xu"] < 100:
-        await msg.reply("❌ Không đủ xu! Cần 100xu")
+
+    if user["xu"]<100:
+        await msg.reply("❌ cần 100 xu")
         return
+
     icons=["🍒","🍋","🍉","⭐","💎"]
+
     a=random.choice(icons)
     b=random.choice(icons)
     c=random.choice(icons)
-    user["xu"] -= 100
+
+    user["xu"]-=100
+
     if a==b==c:
         win=500
-        user["xu"] += win
-        text=f"💎 **JACKPOT!** +{win} xu"
+        user["xu"]+=win
+        text=f"💎 JACKPOT +{win}"
     else:
-        text="💀 **Trượt rồi!** -100xu"
+        text="💀 thua"
+
     save(data)
+
     await msg.reply(f"""
-🎰 SLOT MACHINE
+🎰 SLOT
 
 ┃ {a} │ {b} │ {c} ┃
 
@@ -116,81 +118,132 @@ async def slot(msg: types.Message):
 
 # ================= BLACKJACK =================
 
-@dp.message(Command("blackjack"))
+@dp.message(Command("blackjack",ignore_mention=True))
 async def blackjack(msg: types.Message):
+
     user=get_user(msg.from_user.id)
-    if user["xu"] < 150:
-        await msg.reply("❌ Không đủ xu! Cần 150xu")
+
+    if user["xu"]<150:
+        await msg.reply("❌ cần 150 xu")
         return
-    user["xu"] -= 150
-    player=random.randint(15,21)
-    botp=random.randint(15,21)
-    if player>botp:
+
+    user["xu"]-=150
+
+    p=random.randint(15,21)
+    b=random.randint(15,21)
+
+    if p>b:
         user["xu"]+=300
-        result="🏆 **BẠN THẮNG!** +300"
+        text="🏆 thắng +300"
     else:
-        result="💀 **BẠN THUA!** -150"
+        text="💀 thua"
+
     save(data)
+
     await msg.reply(f"""
 🃏 BLACKJACK
 
-👤 Bạn: {player}
-🤖 Bot: {botp}
+👤 {p}
+🤖 {b}
 
-{result}
+{text}
 """)
 
 # ================= POKER =================
 
-@dp.message(Command("poker"))
+@dp.message(Command("poker",ignore_mention=True))
 async def poker(msg: types.Message):
+
     user=get_user(msg.from_user.id)
-    if user["xu"] < 100:
-        await msg.reply("❌ Không đủ xu! Cần 100xu")
+
+    if user["xu"]<100:
+        await msg.reply("❌ cần 100 xu")
         return
-    user["xu"] -= 100
+
+    user["xu"]-=100
+
     p=random.randint(1,13)
     b=random.randint(1,13)
+
     if p>b:
         user["xu"]+=200
-        text="🏆 Thắng! +200"
+        text="🏆 thắng"
     else:
-        text="💀 Thua! -100"
+        text="💀 thua"
+
     save(data)
+
     await msg.reply(f"""
 ♠️ POKER
 
-🃏 Bạn: {p}
-🎴 Bot: {b}
+🃏 {p}
+🎴 {b}
 
 {text}
 """)
 
 # ================= TAIXIU =================
 
-@dp.message(Command("taixiu"))
+@dp.message(Command("taixiu",ignore_mention=True))
 async def taixiu(msg: types.Message):
-    user = get_user(msg.from_user.id)
+
+    user=get_user(msg.from_user.id)
+
     try:
-        parts = msg.text.split()
-        if len(parts) < 3:
-            await msg.reply("❌ /taixiu [tài/xỉu] <amount>")
+
+        parts=msg.text.split()
+
+        bet=parts[1].lower()
+        amount=int(parts[2])
+
+        if bet not in ["tài","xỉu"]:
+            await msg.reply("❌ chọn tài hoặc xỉu")
             return
-        bet_type = parts[1].lower()
-        amount = int(parts[2])
-        if amount < 50 or amount > user["xu"]:
-            await msg.reply("❌ Cược 50- max xu!")
+
+        if amount<50 or amount>user["xu"]:
+            await msg.reply("❌ cược >=50")
             return
-        user["xu"] -= amount
-        result = random.choice(["tài", "xỉu"])
-        if bet_type == result:
-            user["xu"] += amount * 2
-            await msg.reply(f"🎲 **{result.upper()}** - THẮNG! +{amount}")
+
+        user["xu"]-=amount
+
+        result=random.choice(["tài","xỉu"])
+
+        multiplier=random.randint(2,7)
+
+        if bet==result:
+
+            win=amount*multiplier
+
+            user["xu"]+=win
+
+            text=f"""
+🎲 TÀI XỈU
+
+Kết quả: {result}
+
+🏆 THẮNG
+
+💰 x{multiplier}
++{win}
+"""
+
         else:
-            await msg.reply(f"🎲 **{result.upper()}** - THUA!")
+
+            text=f"""
+🎲 TÀI XỈU
+
+Kết quả: {result}
+
+💀 THUA
+-{amount}
+"""
+
         save(data)
+
+        await msg.reply(text)
+
     except:
-        await msg.reply("❌ Lỗi! /taixiu tài 100")
+        await msg.reply("❌ /taixiu tài 100")
 
 # ================= FISH =================
 
@@ -201,194 +254,234 @@ fish_list=[
 ("🐙 Bạch tuộc hiếm",600)
 ]
 
-@dp.message(Command("fish"))
+@dp.message(Command("fish",ignore_mention=True))
 async def fish(msg: types.Message):
+
     user=get_user(msg.from_user.id)
+
     name,price=random.choice(fish_list)
+
     user["xu"]+=price
+
     save(data)
+
     await msg.reply(f"""
 🎣 CÂU CÁ
 
-Bạn bắt được:
 {name}
 
-💰 +{price} xu
+💰 +{price}
 """)
 
 # ================= BOSS =================
 
-@dp.message(Command("boss"))
-async def boss_cmd(msg: types.Message):
+@dp.message(Command("boss",ignore_mention=True))
+async def boss(msg: types.Message):
+
     user=get_user(msg.from_user.id)
-    boss_data = data.get("boss", {"hp":0, "active":False})
-    if not boss_data["active"]:
-        data["boss"] = {"hp":2000, "active":True}
+
+    boss=data["boss"]
+
+    if not boss["active"]:
+
+        data["boss"]={"hp":2000,"active":True}
+
         save(data)
+
         await msg.reply("""
-🐉 **BOSS XUẤT HIỆN**
+🐉 BOSS XUẤT HIỆN
 
-❤️ HP: 2000
-
-⚔️ Dùng /boss để tấn công!
+❤️ 2000 HP
+⚔️ /boss đánh
 """)
         return
+
     dmg=random.randint(50,200)
-    boss_data["hp"] -= dmg
-    data["boss"] = boss_data
-    save(data)
-    if boss_data["hp"] <= 0:
-        user["xu"] += 500
-        data["boss"] = {"hp":0, "active":False}
+
+    boss["hp"]-=dmg
+
+    if boss["hp"]<=0:
+
+        user["xu"]+=500
+
+        data["boss"]={"hp":0,"active":False}
+
         save(data)
-        await msg.reply("""
-💀 BOSS ĐÃ BỊ TIÊU DIỆT!
 
-🏆 +500 xu
-""")
+        await msg.reply("💀 boss chết +500")
+
     else:
-        await msg.reply(f"""
-⚔️ Bạn gây **{dmg}** sát thương
 
-❤️ Boss còn: **{boss_data["hp"]}** HP
+        save(data)
+
+        await msg.reply(f"""
+⚔️ damage {dmg}
+
+❤️ boss còn {boss["hp"]}
 """)
 
 # ================= BANK =================
 
-@dp.message(Command("bank"))
+@dp.message(Command("bank",ignore_mention=True))
 async def bank(msg: types.Message):
-    user = get_user(msg.from_user.id)
-    await msg.reply(f"""
-🏦 **NGÂN HÀNG**
 
-💰 Ví: {user["xu"]}
-🏦 Bank: {user["bank"]}
-➕ /gui <amount>
-➖ /rut <amount>
+    user=get_user(msg.from_user.id)
+
+    await msg.reply(f"""
+🏦 BANK
+
+💰 ví: {user["xu"]}
+🏦 bank: {user["bank"]}
 """)
 
-@dp.message(Command("gui"))
+@dp.message(Command("gui",ignore_mention=True))
 async def gui(msg: types.Message):
-    user = get_user(msg.from_user.id)
-    try:
-        amount = int(msg.text.split()[1])
-        if amount < 1 or amount > user["xu"]:
-            await msg.reply("❌ Không hợp lệ!")
-            return
-        user["xu"] -= amount
-        user["bank"] += amount
-        save(data)
-        await msg.reply(f"✅ Gửi **{amount}** → bank")
-    except:
-        await msg.reply("❌ /gui <amount>")
 
-@dp.message(Command("rut"))
-async def rut(msg: types.Message):
-    user = get_user(msg.from_user.id)
+    user=get_user(msg.from_user.id)
+
     try:
-        amount = int(msg.text.split()[1])
-        if amount < 1 or amount > user["bank"]:
-            await msg.reply("❌ Không hợp lệ!")
+        amount=int(msg.text.split()[1])
+
+        if amount>user["xu"]:
             return
-        user["bank"] -= amount
-        user["xu"] += amount
+
+        user["xu"]-=amount
+        user["bank"]+=amount
+
         save(data)
-        await msg.reply(f"✅ Rút **{amount}** ← bank")
+
+        await msg.reply(f"🏦 gửi {amount}")
+
     except:
-        await msg.reply("❌ /rut <amount>")
+        await msg.reply("❌ /gui 100")
+
+@dp.message(Command("rut",ignore_mention=True))
+async def rut(msg: types.Message):
+
+    user=get_user(msg.from_user.id)
+
+    try:
+        amount=int(msg.text.split()[1])
+
+        if amount>user["bank"]:
+            return
+
+        user["bank"]-=amount
+        user["xu"]+=amount
+
+        save(data)
+
+        await msg.reply(f"🏧 rút {amount}")
+
+    except:
+        await msg.reply("❌ /rut 50")
 
 # ================= TRANSFER =================
 
-@dp.message(Command("chuyentien"))
+@dp.message(Command("chuyentien",ignore_mention=True))
 async def chuyentien(msg: types.Message):
 
-    user = get_user(msg.from_user.id)
-
     if not msg.reply_to_message:
-        await msg.reply("❌ Reply người cần chuyển tiền\nVí dụ: reply /chuyentien 100")
+        await msg.reply("❌ reply người cần chuyển")
         return
+
+    user=get_user(msg.from_user.id)
 
     try:
-        amount = int(msg.text.split()[1])
+        amount=int(msg.text.split()[1])
     except:
-        await msg.reply("❌ /chuyentien <amount>")
         return
 
-    if amount <= 0 or amount > user["xu"]:
-        await msg.reply("❌ Không đủ xu!")
+    if amount>user["xu"]:
+        await msg.reply("❌ không đủ xu")
         return
 
-    target_id = msg.reply_to_message.from_user.id
-    target_user = get_user(target_id)
+    target=msg.reply_to_message.from_user.id
 
-    user["xu"] -= amount
-    target_user["xu"] += amount
+    target_user=get_user(target)
+
+    user["xu"]-=amount
+    target_user["xu"]+=amount
 
     save(data)
 
-    await msg.reply(f"""
-💸 **CHUYỂN TIỀN**
-
-👤 {msg.from_user.id} ➜ {target_id}
-
-💰 {amount} xu
-""")
+    await msg.reply(f"💸 chuyển {amount}")
 
 # ================= ADMIN =================
 
-@dp.message(Command("addtien"))
+@dp.message(Command("addtien",ignore_mention=True))
 async def addtien(msg: types.Message):
-    if msg.from_user.id != ADMIN_ID:
+
+    if msg.from_user.id!=ADMIN_ID:
         return
-    try:
-        parts = msg.text.split()
-        target_id = parts[1].lstrip('@')
-        amount = int(parts[2])
-        target_user = get_user(target_id)
-        target_user["xu"] += amount
-        save(data)
-        await msg.reply(f"✅ Admin add **{amount}** xu cho `{target_id}`")
-    except:
-        await msg.reply("❌ /addtien @user <amount>")
 
-# ================= SAY =================
+    if not msg.reply_to_message:
+        return
 
-@dp.message(Command("say"))
+    amount=int(msg.text.split()[1])
+
+    target=msg.reply_to_message.from_user.id
+
+    target_user=get_user(target)
+
+    target_user["xu"]+=amount
+
+    save(data)
+
+    await msg.reply(f"👑 add {amount}")
+
+# ================= SAY VOICE =================
+
+@dp.message(Command("say",ignore_mention=True))
 async def say(msg: types.Message):
-    text=msg.text.replace("/say ","").strip()
+
+    text=msg.text.replace("/say","").strip()
+
     if not text:
-        await msg.reply("❌ /say <text>")
         return
-    try:
-        file="voice.mp3"
-        voice="vi-VN-HoaiMyNeural"
-        tts=edge_tts.Communicate(text,voice)
-        await tts.save(file)
-        audio=types.FSInputFile(file)
-        await msg.answer_voice(audio)
-        os.remove(file)
-    except Exception as e:
-        await msg.reply("❌ Lỗi TTS!")
+
+    voice="vi-VN-HoaiMyNeural"
+
+    file="voice.mp3"
+
+    tts=edge_tts.Communicate(text,voice)
+
+    await tts.save(file)
+
+    audio=types.FSInputFile(file)
+
+    await msg.answer_voice(audio)
+
+    os.remove(file)
 
 # ================= TOP =================
 
-@dp.message(Command("top"))
+@dp.message(Command("top",ignore_mention=True))
 async def top(msg: types.Message):
+
     ranking=sorted(data["users"].items(),
                    key=lambda x:x[1]["xu"],
                    reverse=True)
-    text="🏆 **TOP 10 NGƯỜI GIÀU NHẤT**\n\n"
-    for i, (uid,user) in enumerate(ranking[:10],1):
-        text+=f"{i}. 👤 `{uid}` — 💰 **{user['xu']}** xu\n"
+
+    text="🏆 TOP 10\n\n"
+
+    for i,(uid,user) in enumerate(ranking[:10],1):
+        text+=f"{i}. {uid} — {user['xu']}\n"
+
     await msg.reply(text)
 
 # ================= RUN =================
 
 async def main():
+
     print("Bot started!")
+
+    await bot.delete_webhook(drop_pending_updates=True)
+
     await dp.start_polling(bot)
 
-if __name__ == "__main__":
+if __name__=="__main__":
     asyncio.run(main())
+
 
 
