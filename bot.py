@@ -7,11 +7,16 @@ import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
 
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID","8337495954"))
 
-bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot(
+    TOKEN,
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+)
+
 dp = Dispatcher()
 
 DATA_FILE="data.json"
@@ -190,7 +195,6 @@ async def taixiu(msg: types.Message):
     user=get_user(msg.from_user.id)
 
     try:
-
         parts=msg.text.split()
 
         bet=parts[1].lower()
@@ -207,13 +211,11 @@ async def taixiu(msg: types.Message):
         user["xu"]-=amount
 
         result=random.choice(["tài","xỉu"])
-
         multiplier=random.randint(2,7)
 
         if bet==result:
 
             win=amount*multiplier
-
             user["xu"]+=win
 
             text=f"""
@@ -222,9 +224,9 @@ async def taixiu(msg: types.Message):
 Kết quả: {result}
 
 🏆 THẮNG
-
 💰 x{multiplier}
-+{win}
+
++{win} xu
 """
 
         else:
@@ -235,7 +237,7 @@ Kết quả: {result}
 Kết quả: {result}
 
 💀 THUA
--{amount}
+-{amount} xu
 """
 
         save(data)
@@ -303,7 +305,6 @@ async def boss(msg: types.Message):
     if boss["hp"]<=0:
 
         user["xu"]+=500
-
         data["boss"]={"hp":0,"active":False}
 
         save(data)
@@ -320,117 +321,7 @@ async def boss(msg: types.Message):
 ❤️ boss còn {boss["hp"]}
 """)
 
-# ================= BANK =================
-
-@dp.message(Command("bank",ignore_mention=True))
-async def bank(msg: types.Message):
-
-    user=get_user(msg.from_user.id)
-
-    await msg.reply(f"""
-🏦 BANK
-
-💰 ví: {user["xu"]}
-🏦 bank: {user["bank"]}
-""")
-
-@dp.message(Command("gui",ignore_mention=True))
-async def gui(msg: types.Message):
-
-    user=get_user(msg.from_user.id)
-
-    try:
-        amount=int(msg.text.split()[1])
-
-        if amount>user["xu"]:
-            return
-
-        user["xu"]-=amount
-        user["bank"]+=amount
-
-        save(data)
-
-        await msg.reply(f"🏦 gửi {amount}")
-
-    except:
-        await msg.reply("❌ /gui 100")
-
-@dp.message(Command("rut",ignore_mention=True))
-async def rut(msg: types.Message):
-
-    user=get_user(msg.from_user.id)
-
-    try:
-        amount=int(msg.text.split()[1])
-
-        if amount>user["bank"]:
-            return
-
-        user["bank"]-=amount
-        user["xu"]+=amount
-
-        save(data)
-
-        await msg.reply(f"🏧 rút {amount}")
-
-    except:
-        await msg.reply("❌ /rut 50")
-
-# ================= TRANSFER =================
-
-@dp.message(Command("chuyentien",ignore_mention=True))
-async def chuyentien(msg: types.Message):
-
-    if not msg.reply_to_message:
-        await msg.reply("❌ reply người cần chuyển")
-        return
-
-    user=get_user(msg.from_user.id)
-
-    try:
-        amount=int(msg.text.split()[1])
-    except:
-        return
-
-    if amount>user["xu"]:
-        await msg.reply("❌ không đủ xu")
-        return
-
-    target=msg.reply_to_message.from_user.id
-
-    target_user=get_user(target)
-
-    user["xu"]-=amount
-    target_user["xu"]+=amount
-
-    save(data)
-
-    await msg.reply(f"💸 chuyển {amount}")
-
-# ================= ADMIN =================
-
-@dp.message(Command("addtien",ignore_mention=True))
-async def addtien(msg: types.Message):
-
-    if msg.from_user.id!=ADMIN_ID:
-        return
-
-    if not msg.reply_to_message:
-        return
-
-    amount=int(msg.text.split()[1])
-
-    target=msg.reply_to_message.from_user.id
-
-    target_user=get_user(target)
-
-    target_user["xu"]+=amount
-
-    save(data)
-
-    await msg.reply(f"👑 add {amount}")
-
-# ================= SAY VOICE =================
+# ================= SAY =================
 
 @dp.message(Command("say",ignore_mention=True))
 async def say(msg: types.Message):
@@ -441,34 +332,15 @@ async def say(msg: types.Message):
         return
 
     voice="vi-VN-HoaiMyNeural"
-
     file="voice.mp3"
 
     tts=edge_tts.Communicate(text,voice)
-
     await tts.save(file)
 
     audio=types.FSInputFile(file)
-
     await msg.answer_voice(audio)
 
     os.remove(file)
-
-# ================= TOP =================
-
-@dp.message(Command("top",ignore_mention=True))
-async def top(msg: types.Message):
-
-    ranking=sorted(data["users"].items(),
-                   key=lambda x:x[1]["xu"],
-                   reverse=True)
-
-    text="🏆 TOP 10\n\n"
-
-    for i,(uid,user) in enumerate(ranking[:10],1):
-        text+=f"{i}. {uid} — {user['xu']}\n"
-
-    await msg.reply(text)
 
 # ================= RUN =================
 
@@ -482,6 +354,8 @@ async def main():
 
 if __name__=="__main__":
     asyncio.run(main())
+
+
 
 
 
