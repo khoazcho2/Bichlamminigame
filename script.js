@@ -2,7 +2,7 @@
 const supabaseUrl = "https://huhyetvefyhlhyldkvis.supabase.co";
 const supabaseKey = "sb_publishable_40AA8unUr1HLIcgBn4gkFg_dvmCshjR"; // User chỉ cần anon key
 
-const supabaseClient = Supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 let resources = [];
 const defaultCategories = ['Tất cả', 'Game', 'Tool', 'Phần mềm', 'Tài liệu'];
