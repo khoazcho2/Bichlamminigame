@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website Chia Sẻ Link Tải</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📥 Chia Sẻ Link Tải</h1>
+    </header>
+
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Tìm kiếm tài nguyên..." oninput="performSearch()">
+      <select id="categoryFilter" onchange="performSearch()">
+        <!-- Rendered by JS -->
+      </select>
+<a href="admin.html" target="_blank" style="padding: 0.75rem; font-size:1rem; background:#007bff; color:white; text-decoration:none; border-radius:5px;">🔧 Admin</a>
+    </div>
+
+    <p style="text-align:center; color:#666;">Dữ liệu từ API. <a href="admin.html" target="_blank">Vào Admin thêm/sửa</a></p>
+
+    <!-- Resources Grid -->
+    <div id="resourcesGrid">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
