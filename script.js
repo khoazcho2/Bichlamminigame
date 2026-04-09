@@ -1,90 +1,79 @@
-// Supabase config (global)
+// Supabase - USER VIEW (public)
+const supabaseUrl = "https://huhyetvefyhlhyldkvis.supabase.co";
+const supabaseKey = "sb_publishable_40AA8unUr1HLIcgBn4gkFg_dvmCshjR"; // User chỉ cần anon key
+
+const supabaseClient = Supabase.createClient(supabaseUrl, supabaseKey);
+
 let resources = [];
 const defaultCategories = ['Tất cả', 'Game', 'Tool', 'Phần mềm', 'Tài liệu'];
 
 // Khởi tạo
 async function init() {
-  await fetchResources();
+  await loadLinks();
   renderCategories();
   renderResources();
 }
 
-// Fetch from Supabase
-async function fetchResources() {
-  try {
-    const { data, error } = await supabase
-      .from('resources')
-      .select('*')
-      .order('date', { ascending: false });
-    if (error) throw error;
-    resources = data || [];
-  } catch (err) {
-    console.error('Supabase error:', err);
-    document.getElementById('resourcesGrid').innerHTML = '<p style="text-align:center;">Lỗi load dữ liệu. Kiểm tra Supabase.</p>';
+// Load from "link" table
+async function loadLinks() {
+  const { data, error } = await supabaseClient
+    .from("link")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.log(error);
+    document.getElementById('resourcesGrid').innerHTML = '<p>Lỗi load. Admin thêm dữ liệu.</p>';
+    return;
+  }
+
+  resources = data || [];
+  console.log('Loaded', resources.length, 'links');
+}
+
+// Render categories  
+function renderCategories() {
+  const select = document.getElementById('categoryFilter');
+  if (select) {
+    select.innerHTML = defaultCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
   }
 }
 
-// Render categories
-function renderCategories() {
-  const select = document.getElementById('categoryFilter');
-  select.innerHTML = defaultCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-}
-
-// Render resources
+// Render links
 function renderResources(filter = {}) {
   const grid = document.getElementById('resourcesGrid');
   let filtered = resources;
 
-  if (filter.category && filter.category !== 'Tất cả') {
-    filtered = filtered.filter(r => r.category === filter.category);
-  }
-
+  // Simple filter (add category field to table later)
   if (filter.search) {
     const term = filter.search.toLowerCase();
     filtered = filtered.filter(r => 
-      r.title.toLowerCase().includes(term) || r.description.toLowerCase().includes(term)
+      (r.text || r.title || '').toLowerCase().includes(term) ||
+      r.url.toLowerCase().includes(term)
     );
   }
 
   if (filtered.length === 0) {
-    grid.innerHTML = '<p style="text-align:center; color:#666;">Không tìm thấy. Thêm ở Admin.</p>';
+    grid.innerHTML = '<p style="text-align:center;">Không tìm thấy link.</p>';
     return;
   }
 
   grid.innerHTML = filtered.map(r => `
     <div class="resource-card">
-      ${r.image ? `<img src="${r.image}" alt="${r.title}" class="resource-image">` : '<div class="resource-image" style="display:flex;align-items:center;justify-content:center;color:#999;">No image</div>'}
       <div class="resource-content">
-        <span class="resource-category">${r.category}</span>
-        <h3 class="resource-title">${r.title}</h3>
-        <p class="resource-desc">${r.description}</p>
-        <button class="download-btn" onclick="openLink('${r.id}', '${r.url}')">📥 Tải / Mở Link (${r.downloads || 0} lần)</button>
+        <h3 class="resource-title">${r.text || r.title || 'Link'}</h3>
+        <a href="${r.url}" target="_blank" class="download-btn" style="display: block; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; text-align: center; border-radius: 5px; margin-top: 1rem;">📥 Mở Link</a>
       </div>
     </div>
   `).join('');
 }
 
-// Open link + increment download
-async function openLink(id, url) {
-  // Update downloads
-  await supabase
-    .from('resources')
-    .update({ downloads: (resources.find(r => r.id === id)?.downloads || 0) + 1 })
-    .eq('id', id);
-  window.open(url, '_blank');
-}
-
-// Search & filter
+// Search
 function performSearch() {
-  const search = document.getElementById('searchInput').value;
-  const category = document.getElementById('categoryFilter').value;
-  renderResources({ search, category });
+  const search = document.getElementById('searchInput')?.value || '';
+  renderResources({ search });
 }
 
-// Init on load
+// Init
 window.addEventListener('load', init);
-
-// Auto refresh every 30s
-setInterval(() => {
-  fetchResources().then(() => renderResources({}));
-}, 30000);
+setInterval(loadLinks, 30000); // Auto refresh

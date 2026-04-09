@@ -5,237 +5,158 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Quản lý Link Tải</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>🔧 Admin Quản lý</h1>
-    </header>
 
-    <div class="controls">
-      <input type="text" id="searchInputAdmin" placeholder="Tìm kiếm..." oninput="performAdminSearch()">
-      <select id="categoryFilterAdmin" onchange="performAdminSearch()">
-        <!-- JS -->
-      </select>
-      <button id="loginBtnAdmin" onclick="showLogin()">Đăng nhập</button>
-      <button id="logoutBtnAdmin" onclick="logoutAdmin()" style="display:none;">Đăng xuất</button>
+<header style="display: flex; align-items: center; gap: 1rem;">
+  <img src="img/ChatGPT Image 18_33_23 9 thg 4, 2026.png" alt="Logo" style="width: 70px; height: 70px; border-radius: 8px;">
+  <h1>🔧 Admin - Nhập mật khẩu ngay</h1>
+</header>
+
+    
+    <!-- Login Form ALWAYS VISIBLE - No JS needed -->
+    <div id="loginForm" style="background: white; padding: 2rem; border-radius: 10px; max-width: 400px; margin: 2rem auto; text-align: center;">
+      <h2>🔐 Đăng nhập Admin</h2>
+      <input type="password" id="passwordAdmin" placeholder="Nhập: hoquocdz01" style="width: 100%; padding: 1rem; margin: 1rem 0; border: 2px solid #007bff; border-radius: 5px; font-size: 1.2rem;">
+      <br>
+      <button onclick="loginAdmin()" style="padding: 1rem 2rem; font-size: 1.2rem; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">🚀 ĐĂNG NHẬP</button>
     </div>
 
-    <!-- Login Form -->
-    <form id="loginFormAdmin" style="display:none;" onsubmit="return false;">
-      <input type="password" id="passwordAdmin" placeholder="Nhập mật khẩu admin">
-      <button type="button" onclick="loginAdmin()">Đăng nhập</button>
-    </form>
-
-    <!-- Admin Forms -->
-    <div id="adminContent" style="display:none;">
-      <button onclick="showAddFormAdmin()">➕ Thêm mới</button>
-      <form id="resourceFormAdmin" style="display:none; margin-top:1rem;" onsubmit="handleAdminSubmit(event)">
-        <div class="form-group">
+    <!-- Admin Panel HIDDEN -->
+    <div id="adminContent" style="display: none;">
+      <div style="text-align: center; padding: 1rem; background: #007bff; color: white;">
+        <h2>✅ ĐÃ LOGIN - Quản lý Link</h2>
+        <button onclick="logout()" style="padding: 0.5rem 1rem; background: #dc3545;">Đăng xuất</button>
+      </div>
+      
+      <button onclick="showForm()" style="padding: 1rem 2rem; font-size: 1.1rem; background: #28a745; color: white; border: none; border-radius: 5px; margin: 1rem;">➕ Thêm Link Mới</button>
+      
+      <form id="addForm" style="display: none; background: white; padding: 2rem; border-radius: 10px; margin: 1rem 0;">
+        <div style="margin-bottom: 1rem;">
+          <label>Tiêu đề:</label>
+          <input type="text" id="title" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label>Link:</label>
+          <input type="url" id="url" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+        <div style="margin-bottom: 1rem;">
           <label>Danh mục:</label>
-          <select id="categoryAdmin">
+          <select id="category" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px;">
             <option value="Game">Game</option>
             <option value="Tool">Tool</option>
             <option value="Phần mềm">Phần mềm</option>
             <option value="Tài liệu">Tài liệu</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Tiêu đề:</label>
-          <input type="text" id="titleAdmin" required>
-        </div>
-        <div class="form-group">
-          <label>Mô tả:</label>
-          <textarea id="descriptionAdmin" rows="3"></textarea>
-        </div>
-        <div class="form-group">
-          <label>Link tải:</label>
-          <input type="url" id="urlAdmin" required>
-        </div>
-        <div class="form-group">
-          <label>Ảnh:</label>
-          <input type="file" id="imageFileAdmin" accept="image/*">
-          <small>Ảnh sẽ convert base64</small>
-        </div>
-        <button type="submit">Thêm/Sửa</button>
-        <button type="button" onclick="cancelFormAdmin()">Hủy</button>
+        <button type="submit" style="width: 100%; padding: 1rem; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 1.1rem;">💾 Lưu Link</button>
       </form>
-
-      <div id="resourcesGridAdmin" style="margin-top:2rem;">
-        <!-- Rendered by JS -->
-      </div>
+      
+      <div id="resourcesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem;"></div>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const supabaseUrl = "https://huhyetvefyhlhyldkvis.supabase.co"
-    const supabaseKey = "sb_publishable_40AA8unUr1HLIcgBn4gkFg_dvmCshjR" 
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey)
+    console.log('=== ADMIN JS START ===');
     
-    let resourcesAdmin = [];
-    let currentEditIdAdmin = null;
-    let isLoggedInAdmin = false;
-    const defaultCategoriesAdmin = ['Tất cả', 'Game', 'Tool', 'Phần mềm', 'Tài liệu'];
+    const supabaseUrl = 'https://huhyetvefyhlhyldkvis.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1aHlldmVmeWhsaHl5bGRrdmlzIiwicm9sZSI6ImF1dGgiLCJpYXQiOjE3MzgzMTY4OTQsImV4cCI6MjA1Mzg5Mjg5NH0.R_Kz8R6iRxAdw6Q1Y2z4zK8L4o7sX1uK0k9S4kJqQAA';
+    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+    
+    let resources = [];
+    
+    console.log('Supabase ready');
 
-    // Supabase functions (replace API)
-    async function fetchResourcesAdmin() {
+    function loginAdmin() {
+      console.log('Login clicked');
+      const pass = document.getElementById('passwordAdmin').value;
+      if (pass === 'hoquocdz01') {
+        console.log('Password OK');
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminContent').style.display = 'block';
+        loadResources();
+      } else {
+        alert('❌ Sai mật khẩu! Thử "hoquocdz01"');
+      }
+    }
+
+    function logout() {
+      document.getElementById('adminContent').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('passwordAdmin').value = '';
+    }
+
+    function showForm() {
+      document.getElementById('addForm').style.display = 'block';
+    }
+
+    async function loadResources() {
+      console.log('Loading resources...');
       try {
-        const { data, error } = await supabase
-          .from('resources')
-          .select('*')
-          .order('date', { ascending: false });
+await supabase.from('link').select('*');
         if (error) throw error;
-        resourcesAdmin = data || [];
-        renderAdminResources();
-      } catch (err) {
-        alert('Supabase error: ' + err.message);
+        resources = data || [];
+        renderList();
+        console.log('Loaded', resources.length, 'items');
+      } catch (error) {
+        console.error('Load error:', error);
+        document.getElementById('resourcesList').innerHTML = '<p style="text-align: center; color: red;">❌ Lỗi DB: Tạo table "resources" Supabase hoặc check key</p>';
       }
     }
 
-    function renderCategoriesAdmin() {
-      const select = document.getElementById('categoryFilterAdmin');
-      select.innerHTML = defaultCategoriesAdmin.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-    }
-
-    function renderAdminResources(filter = {}) {
-      let filtered = resourcesAdmin;
-      if (filter.category && filter.category !== 'Tất cả') filtered = filtered.filter(r => r.category === filter.category);
-      if (filter.search) {
-        const term = filter.search.toLowerCase();
-        filtered = filtered.filter(r => r.title.toLowerCase().includes(term) || r.description.toLowerCase().includes(term));
+    function renderList() {
+      const list = document.getElementById('resourcesList');
+      if (resources.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: #666;">📭 Chưa có link. Thêm ngay!</p>';
+        return;
       }
-      const grid = document.getElementById('resourcesGridAdmin');
-      grid.innerHTML = filtered.map(r => `
-        <div class="resource-card">
-          ${r.image ? `<img src="${r.image}" alt="${r.title}" class="resource-image">` : '<div class="resource-image" style="background:#eee;display:flex;align-items:center;justify-content:center;">No image</div>'}
-          <div class="resource-content">
-            <span class="resource-category">${r.category}</span>
-            <h3>${r.title}</h3>
-            <p>${r.description}</p>
-            <p><a href="${r.url}" target="_blank">${r.url}</a></p>
-            <p>Tải: ${r.downloads || 0} lần</p>
-            <div>
-              <button class="editBtn" onclick="editAdminResource('${r.id}')">Sửa</button>
-              <button class="deleteBtn" onclick="deleteAdminResource('${r.id}')">Xóa</button>
-            </div>
+      list.innerHTML = resources.map(r => `
+        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h3>${r.title || 'No title'}</h3>
+          <a href="${r.url}" target="_blank" style="color: #007bff; word-break: break-all;">🔗 ${r.url}</a>
+          <p><strong>${r.category}</strong></p>
+          <div style="margin-top: 1rem;">
+            <button onclick="editItem('${r.id}')" style="background: #007bff; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; margin-right: 0.5rem;">Sửa</button>
+            <button onclick="deleteItem('${r.id}')" style="background: #dc3545; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px;">Xóa</button>
           </div>
         </div>
       `).join('');
     }
 
-    function performAdminSearch() {
-      const search = document.getElementById('searchInputAdmin').value;
-      const category = document.getElementById('categoryFilterAdmin').value;
-      renderAdminResources({ search, category });
-    }
-
-    function showLogin() {
-      document.getElementById('loginFormAdmin').style.display = 'block';
-    }
-
-    async function loginAdmin() {
-      const pass = document.getElementById('passwordAdmin').value;
-      if (pass === 'hoquocdz01') {
-        isLoggedInAdmin = true;
-        document.getElementById('loginFormAdmin').style.display = 'none';
-        document.getElementById('adminContent').style.display = 'block';
-        document.getElementById('loginBtnAdmin').style.display = 'none';
-        document.getElementById('logoutBtnAdmin').style.display = 'inline-block';
-        await fetchResourcesAdmin();
-        renderCategoriesAdmin();
-      } else {
-        alert('Sai mật khẩu!');
+    async function deleteItem(id) {
+      if (confirm('Xóa link này?')) {
+await supabase.from('link').delete().eq('id', id);
+        if (!error) loadResources();
       }
     }
 
-    function logoutAdmin() {
-      isLoggedInAdmin = false;
-      document.getElementById('adminContent').style.display = 'none';
-      document.getElementById('resourceFormAdmin').style.display = 'none';
-      document.getElementById('loginBtnAdmin').style.display = 'inline-block';
-      document.getElementById('logoutBtnAdmin').style.display = 'none';
+    function editItem(id) {
+      alert('Edit feature coming soon!');
     }
 
-    function showAddFormAdmin() {
-      currentEditIdAdmin = null;
-      document.getElementById('resourceFormAdmin').reset();
-      document.getElementById('resourceFormAdmin').style.display = 'block';
-    }
-
-    function cancelFormAdmin() {
-      document.getElementById('resourceFormAdmin').style.display = 'none';
-    }
-
-    function editAdminResource(id) {
-      currentEditIdAdmin = id;
-      const resource = resourcesAdmin.find(r => r.id === id);
-      if (resource) {
-        document.getElementById('categoryAdmin').value = resource.category;
-        document.getElementById('titleAdmin').value = resource.title;
-        document.getElementById('descriptionAdmin').value = resource.description;
-        document.getElementById('urlAdmin').value = resource.url;
-        document.getElementById('resourceFormAdmin').style.display = 'block';
-      }
-    }
-
-    async function deleteAdminResource(id) {
-      if (confirm('Xóa?')) {
-        const { error } = await supabase.from('resources').delete().eq('id', id);
-        if (!error) await fetchResourcesAdmin();
-      }
-    }
-
-    async function handleAdminSubmit(e) {
+    document.getElementById('addForm').onsubmit = async function(e) {
       e.preventDefault();
-      const formData = {
-        category: document.getElementById('categoryAdmin').value,
-        title: document.getElementById('titleAdmin').value,
-        description: document.getElementById('descriptionAdmin').value,
-        url: document.getElementById('urlAdmin').value,
-        downloads: 0
+      const newLink = {
+        title: document.getElementById('title').value,
+        url: document.getElementById('url').value,
+        category: document.getElementById('category').value,
+        downloads: 0,
+        created_at: new Date().toISOString()
       };
-      const imageFile = document.getElementById('imageFileAdmin').files[0];
-      if (imageFile) {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          formData.image = reader.result;
-          await submitAdmin(formData);
-        };
-        reader.readAsDataURL(imageFile);
-        return;
+      
+      const { error } = await supabase.from('resources').insert([newLink]);
+      if (!error) {
+        document.getElementById('addForm').style.display = 'none';
+        loadResources();
+        document.getElementById('title').value = '';
+        document.getElementById('url').value = '';
       }
-      await submitAdmin(formData);
-    }
-
-    async function submitAdmin(formData) {
-      try {
-        let result;
-        if (currentEditIdAdmin) {
-          const { data, error } = await supabase
-            .from('resources')
-            .update(formData)
-            .eq('id', currentEditIdAdmin);
-          result = data;
-        } else {
-          const { data, error } = await supabase
-            .from('resources')
-            .insert([formData]);
-          result = data[0];
-        }
-        if (result) {
-          cancelFormAdmin();
-          await fetchResourcesAdmin();
-        }
-      } catch (err) {
-        alert('Lỗi: ' + err.message);
-      }
-    }
-
-    // Load on start
-    window.onload = () => {
-      renderCategoriesAdmin();
     };
+
+    console.log('=== ADMIN JS READY ===');
   </script>
 </body>
 </html>
+
