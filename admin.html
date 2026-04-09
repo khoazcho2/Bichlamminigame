@@ -95,7 +95,7 @@
     async function loadResources() {
       console.log('Loading resources...');
       try {
-await supabase.from('link').select('*');
+const { data, error } = await supabase.from('link').select('*');
         if (error) throw error;
         resources = data || [];
         renderList();
@@ -127,7 +127,7 @@ await supabase.from('link').select('*');
 
     async function deleteItem(id) {
       if (confirm('Xóa link này?')) {
-await supabase.from('link').delete().eq('id', id);
+const { error } = await supabase.from('link').delete().eq('id', id);
         if (!error) loadResources();
       }
     }
