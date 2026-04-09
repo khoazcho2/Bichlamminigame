@@ -1,5 +1,4 @@
-// API config
-const API_BASE = 'http://localhost:3000/api';
+// Supabase config (global)
 let resources = [];
 const defaultCategories = ['Tất cả', 'Game', 'Tool', 'Phần mềm', 'Tài liệu'];
 
@@ -10,19 +9,18 @@ async function init() {
   renderResources();
 }
 
-// Fetch from API
+// Fetch from Supabase
 async function fetchResources() {
   try {
-    const res = await fetch(`${API_BASE}/resources`);
-    if (res.ok) {
-      resources = await res.json();
-    } else {
-      console.error('API error:', res.statusText);
-      document.getElementById('resourcesGrid').innerHTML = '<p style="text-align:center;">Server chưa chạy hoặc lỗi API. Vào <a href="admin.html">Admin</a> kiểm tra.</p>';
-    }
+    const { data, error } = await supabase
+      .from('resources')
+      .select('*')
+      .order('date', { ascending: false });
+    if (error) throw error;
+    resources = data || [];
   } catch (err) {
-    console.error('Server chưa chạy?', err);
-    document.getElementById('resourcesGrid').innerHTML = '<p style="text-align:center;">Server chưa chạy. Chạy `npm start`.</p>';
+    console.error('Supabase error:', err);
+    document.getElementById('resourcesGrid').innerHTML = '<p style="text-align:center;">Lỗi load dữ liệu. Kiểm tra Supabase.</p>';
   }
 }
 
@@ -32,7 +30,7 @@ function renderCategories() {
   select.innerHTML = defaultCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
 }
 
-// Render resources (user only)
+// Render resources
 function renderResources(filter = {}) {
   const grid = document.getElementById('resourcesGrid');
   let filtered = resources;
@@ -49,7 +47,7 @@ function renderResources(filter = {}) {
   }
 
   if (filtered.length === 0) {
-    grid.innerHTML = '<p style="text-align:center; color:#666;">Không tìm thấy. Thử tìm khác hoặc thêm ở Admin.</p>';
+    grid.innerHTML = '<p style="text-align:center; color:#666;">Không tìm thấy. Thêm ở Admin.</p>';
     return;
   }
 
@@ -60,14 +58,19 @@ function renderResources(filter = {}) {
         <span class="resource-category">${r.category}</span>
         <h3 class="resource-title">${r.title}</h3>
         <p class="resource-desc">${r.description}</p>
-        <button class="download-btn" onclick="openLink('${r.url}')">📥 Tải / Mở Link</button>
+        <button class="download-btn" onclick="openLink('${r.id}', '${r.url}')">📥 Tải / Mở Link (${r.downloads || 0} lần)</button>
       </div>
     </div>
   `).join('');
 }
 
-// Open link
-function openLink(url) {
+// Open link + increment download
+async function openLink(id, url) {
+  // Update downloads
+  await supabase
+    .from('resources')
+    .update({ downloads: (resources.find(r => r.id === id)?.downloads || 0) + 1 })
+    .eq('id', id);
   window.open(url, '_blank');
 }
 

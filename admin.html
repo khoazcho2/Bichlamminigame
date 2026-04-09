@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Quản lý Link Tải</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="container">
@@ -68,27 +69,27 @@
   </div>
 
   <script>
-    const API_BASE = 'http://localhost:3000/api';
-    const AUTH_HEADER = 'Basic YWRtaW4='; // admin base64
+    const supabaseUrl = "https://huhyetvefyhlhyldkvis.supabase.co"
+    const supabaseKey = "sb_publishable_40AA8unUr1HLIcgBn4gkFg_dvmCshjR" 
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey)
+    
     let resourcesAdmin = [];
     let currentEditIdAdmin = null;
     let isLoggedInAdmin = false;
-
     const defaultCategoriesAdmin = ['Tất cả', 'Game', 'Tool', 'Phần mềm', 'Tài liệu'];
 
+    // Supabase functions (replace API)
     async function fetchResourcesAdmin() {
       try {
-        const res = await fetch(`${API_BASE}/resources`, {
-          headers: { 'Authorization': AUTH_HEADER }
-        });
-        if (res.ok) {
-          resourcesAdmin = await res.json();
-          renderAdminResources();
-        } else {
-          alert('Lỗi fetch: ' + res.statusText);
-        }
+        const { data, error } = await supabase
+          .from('resources')
+          .select('*')
+          .order('date', { ascending: false });
+        if (error) throw error;
+        resourcesAdmin = data || [];
+        renderAdminResources();
       } catch (err) {
-        alert('Server chưa chạy? ' + err.message);
+        alert('Supabase error: ' + err.message);
       }
     }
 
@@ -99,18 +100,11 @@
 
     function renderAdminResources(filter = {}) {
       let filtered = resourcesAdmin;
-
-      if (filter.category && filter.category !== 'Tất cả') {
-        filtered = filtered.filter(r => r.category === filter.category);
-      }
-
+      if (filter.category && filter.category !== 'Tất cả') filtered = filtered.filter(r => r.category === filter.category);
       if (filter.search) {
         const term = filter.search.toLowerCase();
-        filtered = filtered.filter(r => 
-          r.title.toLowerCase().includes(term) || r.description.toLowerCase().includes(term)
-        );
+        filtered = filtered.filter(r => r.title.toLowerCase().includes(term) || r.description.toLowerCase().includes(term));
       }
-
       const grid = document.getElementById('resourcesGridAdmin');
       grid.innerHTML = filtered.map(r => `
         <div class="resource-card">
@@ -120,6 +114,7 @@
             <h3>${r.title}</h3>
             <p>${r.description}</p>
             <p><a href="${r.url}" target="_blank">${r.url}</a></p>
+            <p>Tải: ${r.downloads || 0} lần</p>
             <div>
               <button class="editBtn" onclick="editAdminResource('${r.id}')">Sửa</button>
               <button class="deleteBtn" onclick="deleteAdminResource('${r.id}')">Xóa</button>
@@ -141,7 +136,7 @@
 
     async function loginAdmin() {
       const pass = document.getElementById('passwordAdmin').value;
-if (pass === 'hoquocdz01') {
+      if (pass === 'hoquocdz01') {
         isLoggedInAdmin = true;
         document.getElementById('loginFormAdmin').style.display = 'none';
         document.getElementById('adminContent').style.display = 'block';
@@ -176,21 +171,18 @@ if (pass === 'hoquocdz01') {
       currentEditIdAdmin = id;
       const resource = resourcesAdmin.find(r => r.id === id);
       if (resource) {
+        document.getElementById('categoryAdmin').value = resource.category;
         document.getElementById('titleAdmin').value = resource.title;
         document.getElementById('descriptionAdmin').value = resource.description;
         document.getElementById('urlAdmin').value = resource.url;
-        document.getElementById('categoryAdmin').value = resource.category;
         document.getElementById('resourceFormAdmin').style.display = 'block';
       }
     }
 
     async function deleteAdminResource(id) {
       if (confirm('Xóa?')) {
-        await fetch(`${API_BASE}/resources/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': AUTH_HEADER }
-        });
-        await fetchResourcesAdmin();
+        const { error } = await supabase.from('resources').delete().eq('id', id);
+        if (!error) await fetchResourcesAdmin();
       }
     }
 
@@ -200,9 +192,9 @@ if (pass === 'hoquocdz01') {
         category: document.getElementById('categoryAdmin').value,
         title: document.getElementById('titleAdmin').value,
         description: document.getElementById('descriptionAdmin').value,
-        url: document.getElementById('urlAdmin').value
+        url: document.getElementById('urlAdmin').value,
+        downloads: 0
       };
-
       const imageFile = document.getElementById('imageFileAdmin').files[0];
       if (imageFile) {
         const reader = new FileReader();
@@ -211,45 +203,36 @@ if (pass === 'hoquocdz01') {
           await submitAdmin(formData);
         };
         reader.readAsDataURL(imageFile);
-      } else {
-        await submitAdmin(formData);
+        return;
       }
+      await submitAdmin(formData);
     }
 
     async function submitAdmin(formData) {
       try {
-        let res;
+        let result;
         if (currentEditIdAdmin) {
-          res = await fetch(`${API_BASE}/resources/${currentEditIdAdmin}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': AUTH_HEADER
-            },
-            body: JSON.stringify(formData)
-          });
+          const { data, error } = await supabase
+            .from('resources')
+            .update(formData)
+            .eq('id', currentEditIdAdmin);
+          result = data;
         } else {
-          res = await fetch(`${API_BASE}/resources`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': AUTH_HEADER
-            },
-            body: JSON.stringify(formData)
-          });
+          const { data, error } = await supabase
+            .from('resources')
+            .insert([formData]);
+          result = data[0];
         }
-        if (res.ok) {
+        if (result) {
           cancelFormAdmin();
           await fetchResourcesAdmin();
-        } else {
-          alert('Lỗi: ' + await res.text());
         }
       } catch (err) {
         alert('Lỗi: ' + err.message);
       }
     }
 
-    // Auto fetch on load
+    // Load on start
     window.onload = () => {
       renderCategoriesAdmin();
     };
