@@ -3,35 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📥 Chia Sẻ Link Tải</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <title>Chia Sẻ Link Tải</title>
+  <style>
+    body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+    a { display: block; padding: 10px; margin: 10px 0; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+    a:hover { background: #0056b3; }
+    h1 { text-align: center; }
+    #list { margin-top: 20px; }
+    .admin-link { background: #28a745; text-align: center; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <img src="img/ChatGPT Image 18_33_23 9 thg 4, 2026.png" alt="Logo" class="logo">
-      <h1>📥 Chia Sẻ Link Tải</h1>
-    </header>
+  <h1>📥 Chia Sẻ Link Tải</h1>
+  <a href="admin.html" class="admin-link">🔧 Admin - Thêm link</a>
+  <div id="list">Đang tải...</div>
 
-    <div class="controls">
-      <input type="text" id="searchInput" placeholder="🔍 Tìm kiếm title, URL, category..." oninput="performSearch()">
-      <select id="categoryFilter" onchange="performSearch()">
-        <!-- Dynamic from JS -->
-      </select>
-      <a href="admin.html" target="_blank" class="admin-btn">🔧 Admin</a>
-    </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabase = supabase.createClient(
+      "https://huhyetvefyhlhyldkvis.supabase.co",
+      "sb_publishable_40AA8unUr1HLIcgBn4gkFg_dvmCshjR"
+    );
 
-    <p style="text-align: center; color: #666; margin-bottom: 2rem;">
-      Dữ liệu realtime từ Supabase. <a href="admin.html" target="_blank">Vào Admin để thêm/sửa/xóa</a>
-    </p>
+    async function loadLinks() {
+      const { data, error } = await supabase
+        .from("link")
+        .select("*")
+        .order('created_at', { ascending: false });
 
-    <div id="resourcesGrid">
-      <!-- Links rendered by JS -->
-    </div>
-  </div>
+      const list = document.getElementById("list");
+      
+      if (error) {
+        list.innerHTML = "❌ Lỗi: " + error.message;
+        return;
+      }
 
-  <script src="script.js"></script>
+      if (!data || data.length === 0) {
+        list.innerHTML = "<p>Chưa có link nào.</p>";
+        return;
+      }
+
+      data.forEach(link => {
+        list.innerHTML += `<a href="${link.url}" target="_blank">${link.title || 'Link'}</a><br>`;
+      });
+    }
+
+    loadLinks();
+  </script>
 </body>
 </html>
 

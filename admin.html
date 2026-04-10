@@ -3,106 +3,125 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🔧 Admin</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <title>Admin - Thêm Link</title>
+  <style>
+    body { font-family: Arial; max-width: 600px; margin: 0 auto; padding: 20px; }
+    input, button { width: 100%; padding: 12px; margin: 10px 0; font-size: 16px; }
+    button { background: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px; }
+    button:hover { background: #218838; }
+    #list { margin-top: 30px; }
+    .delete-btn { background: #dc3545; width: auto; margin-left: 10px; }
+    .item { padding: 10px; background: #f8f9fa; margin: 10px 0; border-radius: 5px; }
+    h1 { text-align: center; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <img src="img/ChatGPT Image 18_33_23 9 thg 4, 2026.png" alt="Logo" class="logo">
-      <h1>🔧 Admin</h1>
-    </header>
+  <h1>🔧 Admin</h1>
+  
+  <input type="password" id="password" placeholder="Nhập mật khẩu admin">
+  <button onclick="checkPassword()">Đăng nhập</button>
 
-    <div id="loginForm" class="admin-form">
-      <h2>🔐 Login</h2>
-      <input type="password" id="passwordAdmin" placeholder="Admin password">
-      <button onclick="loginAdmin()">Login</button>
-    </div>
-
-    <div id="adminContent" style="display: none;">
-      <div class="admin-header">
-        <h2>✅ Logged in</h2>
-        <button onclick="logout()" class="logout-btn">Logout</button>
-      </div>
-      <button onclick="showForm()" class="add-btn">➕ Add Link</button>
-      
-      <form id="addForm" class="admin-form" style="display: none;">
-        <div class="form-group">
-          <label>Title:</label>
-          <input type="text" id="title" required>
-        </div>
-        <div class="form-group">
-          <label>URL:</label>
-          <input type="url" id="url" required>
-        </div>
-        <div class="form-group">
-          <label>Category:</label>
-          <select id="category" required>
-            <option value="">Select...</option>
-            <option value="Game">Game</option>
-            <option value="Tool">Tool</option>
-            <option value="Phần mềm">Software</option>
-            <option value="Tài liệu">Docs</option>
-            <option value="Khác">Other</option>
-          </select>
-        </div>
-        <button type="submit" class="save-btn">Save</button>
-      </form>
-      
-      <div id="resourcesList" class="admin-list"></div>
-    </div>
+  <div id="adminPanel" style="display:none;">
+    <h3>Thêm link mới:</h3>
+    <input type="text" id="title" placeholder="Tiêu đề">
+    <input type="url" id="url" placeholder="URL">
+    <select id="category">
+      <option value="Game">Game</option>
+      <option value="Tool">Tool</option>
+      <option value="Phần mềm">Phần mềm</option>
+      <option value="Tài liệu">Tài liệu</option>
+    </select>
+    <button onclick="addLink()">Thêm link</button>
+    
+    <h3>Danh sách link:</h3>
+    <div id="list"></div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Secure pw hash check (not readable)
-    const ADMIN_PW_HASH = btoa('hoquocdz01');
-    
-    function loginAdmin() {
-      const input = document.getElementById('passwordAdmin').value;
-      if (btoa(input) === ADMIN_PW_HASH) {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('adminContent').style.display = 'block';
-        loadAdminResources();
+    const supabaseUrl = "https://huhyetvefyhlhyldkvis.supabase.co";
+    const supabaseKey = "sb_publishable_40AA8unUr1HLIcgBn4gkFg_dvmCshjR"; 
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    function checkPassword() {
+      const pw = document.getElementById('password').value;
+      if (pw === 'hoquocdz01') {
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('password').style.display = 'none';
+        loadLinks();
       } else {
-        alert('Wrong password!');
-        document.getElementById('passwordAdmin').value = '';
+        alert('Sai mật khẩu!');
       }
     }
 
-    function logout() {
-      document.getElementById('adminContent').style.display = 'none';
-      document.getElementById('loginForm').style.display = 'block';
-      document.getElementById('passwordAdmin').value = '';
-    }
+    async function addLink() {
+      const title = document.getElementById("title").value;
+      const url = document.getElementById("url").value;
+      const category = document.getElementById("category").value;
 
-    function showForm() {
-      document.getElementById('addForm').style.display = 'block';
-      document.getElementById('addForm').scrollIntoView();
-    }
-
-    document.getElementById('addForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const newLink = {
-        title: document.getElementById('title').value.trim(),
-        url: document.getElementById('url').value.trim(),
-        category: document.getElementById('category').value,
-        created_at: new Date().toISOString()
-      };
-
-      try {
-        const { error } = await window.supabase.from('link').insert([newLink]);
-        if (error) throw error;
-        
-        document.getElementById('addForm').reset();
-        document.getElementById('addForm').style.display = 'none';
-        await loadAdminResources();
-        alert('✅ Added!');
-      } catch (error) {
-        alert('❌ Error: ' + error.message);
+      if (!title || !url) {
+        alert('Điền đầy đủ!');
+        return;
       }
-    });
+
+      const { data, error } = await supabase
+        .from("link")
+        .insert([{ title, url, category, created_at: new Date().toISOString() }]);
+
+      if (error) {
+        alert("❌ " + error.message);
+      } else {
+        alert("✅ Thêm thành công!");
+        document.getElementById("title").value = '';
+        document.getElementById("url").value = '';
+        loadLinks();
+      }
+    }
+
+    async function loadLinks() {
+      const { data, error } = await supabase
+        .from("link")
+        .select("*")
+        .order('created_at', { ascending: false });
+
+      const list = document.getElementById("list");
+      
+      if (error) {
+        list.innerHTML = "❌ Lỗi: " + error.message;
+        return;
+      }
+
+      list.innerHTML = '';
+      if (!data || data.length === 0) {
+        list.innerHTML = "<p>Chưa có link.</p>";
+        return;
+      }
+
+      data.forEach((link, index) => {
+        list.innerHTML += `
+          <div class="item">
+            <strong>${link.title}</strong> - ${link.category} 
+            <a href="${link.url}" target="_blank">🔗</a>
+            <button class="delete-btn" onclick="deleteLink('${link.id}')">Xóa</button>
+          </div>
+        `;
+      });
+    }
+
+    async function deleteLink(id) {
+      if (!confirm('Xóa?')) return;
+      
+      const { error } = await supabase
+        .from("link")
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        alert("❌ " + error.message);
+      } else {
+        loadLinks();
+      }
+    }
   </script>
 </body>
 </html>
