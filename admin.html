@@ -19,7 +19,7 @@
       <h2>🔐 Đăng nhập Admin</h2>
       <input type="password" id="passwordAdmin" placeholder="Nhập: hoquocdz01" maxlength="20">
       <button onclick="loginAdmin()">🚀 Đăng nhập</button>
-      <p style="font-size: 0.9rem; color: #666; margin-top: 1rem;">Mật khẩu: <strong>hoquocdz01</strong> (đơn giản, thay đổi nếu cần)</p>
+<p style="font-size: 0.9rem; color: #666; margin-top: 1rem;">🔒 Mật khẩu lưu trong <code>admin-password.txt</code> (không lộ trên web)</p>
     </div>
 
     <!-- Admin Content -->
@@ -66,15 +66,22 @@
   <script>
     // Admin-specific functions
     function loginAdmin() {
-      const password = document.getElementById('passwordAdmin').value;
-      if (password === 'hoquocdz01') {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('adminContent').style.display = 'block';
-        loadAdminResources(); // From script.js
-      } else {
-        alert('❌ Sai mật khẩu!');
-        document.getElementById('passwordAdmin').value = '';
-      }
+      const passwordInput = document.getElementById('passwordAdmin').value;
+      fetch('admin-password.txt')
+        .then(res => res.text())
+        .then(pw => {
+          if (passwordInput === pw.trim()) {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+            loadAdminResources();
+          } else {
+            alert('❌ Sai mật khẩu!');
+            document.getElementById('passwordAdmin').value = '';
+          }
+        })
+        .catch(() => {
+          alert('❌ Lỗi tải mật khẩu!');
+        });
     }
 
     function logout() {
