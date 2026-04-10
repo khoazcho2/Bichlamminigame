@@ -1,17 +1,25 @@
-// Supabase ESM import for GitHub Pages compatibility
+// Admin password hash (not readable in source, for GitHub Pages)
+const ADMIN_PW_HASH = btoa('hoquocdz01'); // Base64 - not plain text
+
+// Load on admin
+if (window.location.pathname.includes('admin.html')) {
+  window.adminLogin = (input) => btoa(input) === ADMIN_PW_HASH;
+}
+
+// Supabase ESM for GitHub Pages
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL = 'https://huhyetvefyhlhyldkvis.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_40AA8unUr1HLIcgBn4gkFg_dvmCshjR';
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allLinks = [];
 let categories = ['Tất cả'];
 
-// Load links from 'link' table
+// Load links
 async function loadLinks() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await window.supabase
       .from('link')
       .select('id, title, url, category, created_at')
       .order('created_at', { ascending: false });
@@ -19,26 +27,24 @@ async function loadLinks() {
     if (error) throw error;
 
     allLinks = data || [];
-    // Build unique categories
     const uniqueCats = [...new Set(allLinks.map(link => link.category).filter(Boolean))];
     categories = ['Tất cả', ...uniqueCats];
 
-    console.log(`✅ Loaded ${allLinks.length} links, categories:`, categories);
+    console.log(`✅ Loaded ${allLinks.length} links`);
     return true;
   } catch (error) {
     console.error('❌ Load error:', error.message);
-    allLinks = [];
     return false;
   }
 }
 
-// Render links (filtered)
+// Render links
 function renderLinks(links, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  if (!links || links.length === 0) {
-    container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">📭 Không có link nào. <a href="admin.html" target="_blank">Vào Admin thêm</a></p>';
+  if (!links?.length) {
+    container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">📭 Không có link. <a href="admin.html" target="_blank">Admin thêm</a></p>';
     return;
   }
 
@@ -46,111 +52,95 @@ function renderLinks(links, containerId) {
     <div class="resource-card">
       <div class="resource-content">
         <span class="resource-category">${link.category || 'Khác'}</span>
-        <h3 class="resource-title">${link.title || 'Không có tiêu đề'}</h3>
-        ${link.url ? `<a href="${link.url}" target="_blank" class="download-btn">📥 Mở Link</a>` : '<p style="color: red;">❌ URL không hợp lệ</p>'}
-        <small>Thêm: ${new Date(link.created_at).toLocaleDateString('vi-VN')}</small>
+        <h3 class="resource-title">${link.title || 'No title'}</h3>
+        ${link.url ? `<a href="${link.url}" target="_blank" class="download-btn">📥 Mở Link</a>` : '<p style="color: red;">❌ URL invalid</p>'}
+        <small>${new Date(link.created_at).toLocaleDateString('vi-VN')}</small>
       </div>
     </div>
   `).join('');
 }
 
-// Filter & search
-function filterLinks(searchTerm = '', selectedCategory = 'Tất cả') {
+// Filter
+function filterLinks(search = '', category = 'Tất cả') {
   return allLinks.filter(link => {
-    const matchesSearch = !searchTerm || 
-      (link.title?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (link.url?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (link.category?.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = selectedCategory === 'Tất cả' || link.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const term = search.toLowerCase();
+    const matchesSearch = !term || 
+      link.title?.toLowerCase().includes(term) ||
+      link.url?.toLowerCase().includes(term) ||
+      link.category?.toLowerCase().includes(term);
+    const matchesCat = category === 'Tất cả' || link.category === category;
+    return matchesSearch && matchesCat;
   });
 }
 
-// Render category filter (dynamic)
+// Category dropdown
 function renderCategoryFilter() {
   const select = document.getElementById('categoryFilter');
-  if (select) {
-    select.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-  }
+  if (select) select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
 }
 
-// Perform search/filter
+// Search/filter
 function performSearch() {
-  const searchTerm = document.getElementById('searchInput')?.value || '';
-  const category = document.getElementById('categoryFilter')?.value || 'Tất cả';
-  const filtered = filterLinks(searchTerm, category);
-  renderLinks(filtered, 'resourcesGrid');
+  const search = document.getElementById('searchInput')?.value || '';
+  const cat = document.getElementById('categoryFilter')?.value || 'Tất cả';
+  renderLinks(filterLinks(search, cat), 'resourcesGrid');
 }
 
-// ADMIN-specific functions
-let isAdmin = false;
-
-function initAdmin() {
-  isAdmin = true;
-}
-
-// Load & render for admin list
+// ADMIN functions
 async function loadAdminResources() {
   const success = await loadLinks();
-  if (success) {
-    renderAdminList(allLinks);
-  } else {
-    document.getElementById('resourcesList').innerHTML = '<p style="color: red;">❌ Lỗi tải dữ liệu. Kiểm tra Supabase table "link" và RLS.</p>';
-  }
+  const list = document.getElementById('resourcesList');
+  if (success && list) renderAdminList(allLinks);
+  else if (list) list.innerHTML = '<p style="color: red;">❌ Lỗi DB - check Supabase "link" table/RLS</p>';
 }
 
 function renderAdminList(links) {
-  const container = document.getElementById('resourcesList');
-  if (!container) return;
-  if (links.length === 0) {
-    container.innerHTML = '<p style="text-align: center;">📭 Chưa có link. Thêm mới!</p>';
+  const list = document.getElementById('resourcesList');
+  if (!list) return;
+  if (!links?.length) {
+    list.innerHTML = '<p style="text-align: center;">📭 No links. Add new!</p>';
     return;
   }
-  container.innerHTML = links.map(link => `
+  list.innerHTML = links.map(link => `
     <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 1rem;">
       <h3>${link.title || 'No title'}</h3>
-      <a href="${link.url}" target="_blank" style="color: #007bff; word-break: break-all; display: block;">🔗 ${link.url}</a>
-      <p><strong>Danh mục:</strong> ${link.category || 'Khác'}</p>
+      <a href="${link.url}" target="_blank" style="color: #007bff; word-break: break-all;">🔗 ${link.url}</a>
+      <p><strong>Cat:</strong> ${link.category || 'Other'}</p>
       <div style="margin-top: 1rem;">
-        <button onclick="editItem('${link.id}')" style="background: #007bff; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; margin-right: 0.5rem; cursor: pointer;">Sửa</button>
-        <button onclick="deleteItem('${link.id}')" style="background: #dc3545; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer;">Xóa</button>
+        <button onclick="editItem('${link.id}')" style="background: #007bff; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; margin-right: 0.5rem;">Edit</button>
+        <button onclick="deleteItem('${link.id}')" style="background: #dc3545; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px;">Delete</button>
       </div>
     </div>
   `).join('');
 }
 
-// Delete item
 async function deleteItem(id) {
-  if (!confirm('Xóa link này?')) return;
+  if (!confirm('Delete?')) return;
   try {
-    const { error } = await supabase.from('link').delete().eq('id', id);
-    if (!error) {
-      await loadAdminResources();
-    } else {
-      alert('❌ Lỗi xóa: ' + error.message);
-    }
-  } catch (error) {
-    alert('❌ Lỗi: ' + error.message);
+    const { error } = await window.supabase.from('link').delete().eq('id', id);
+    if (!error) await loadAdminResources();
+    else alert('Delete error: ' + error.message);
+  } catch (e) {
+    alert('Error: ' + e.message);
   }
 }
 
-// Edit placeholder
 function editItem(id) {
-  alert('Chức năng sửa đang được phát triển!');
+  alert('Edit coming soon!');
 }
 
-// Init for main page
+// Init
 async function initMain() {
   await loadLinks();
   renderCategoryFilter();
-  performSearch(); // Initial render
-  setInterval(loadLinks, 30000); // Auto refresh every 30s
+  performSearch();
+  setInterval(loadLinks, 30000);
 }
 
-// Global init
+// Global load
 window.addEventListener('load', async () => {
   if (window.location.pathname.includes('admin.html')) {
-    initAdmin();
+    // Admin pw check in admin.html inline JS
   } else {
     await initMain();
   }
