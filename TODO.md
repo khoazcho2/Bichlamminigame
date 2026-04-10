@@ -10,5 +10,5 @@
 
 **All core changes applied. Test with: `npx serve .`**
 - index.html: Beautiful cards, search/filter, logo, realtime reload
-- admin.html: Modern form/list, pw: hoquocdz01, add/delete
+- admin.html: Modern form/list, PW obfuscated in script.js (base64: aG9xdW9jZHoyMDE=), add/delete
 - Supabase: Fixed init, table "link" correct, anon key

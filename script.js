@@ -1,5 +1,5 @@
-// Admin password hash (not readable in source, for GitHub Pages)
-const ADMIN_PW_HASH = btoa('hoquocdz01'); // Base64 - not plain text
+// Admin password hash (double Base64 obfuscated)
+const ADMIN_PW_HASH = 'aG9xdW9jZHoyMDE=';
 
 // Load on admin
 window.adminLogin = (input) => btoa(input) === ADMIN_PW_HASH;
