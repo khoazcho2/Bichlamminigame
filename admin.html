@@ -3,82 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Quản lý Link Tải</title>
+  <title>🔧 Admin - Quản lý Link</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="container">
+    <header>
+      <img src="img/ChatGPT Image 18_33_23 9 thg 4, 2026.png" alt="Logo" class="logo">
+      <h1>🔧 Admin Panel</h1>
+    </header>
 
-<header style="display: flex; align-items: center; gap: 1rem;">
-  <img src="img/ChatGPT Image 18_33_23 9 thg 4, 2026.png" alt="Logo" style="width: 70px; height: 70px; border-radius: 8px;">
-  <h1>🔧 Admin - Nhập mật khẩu ngay</h1>
-</header>
-
-    
-    <!-- Login Form ALWAYS VISIBLE - No JS needed -->
-    <div id="loginForm" style="background: white; padding: 2rem; border-radius: 10px; max-width: 400px; margin: 2rem auto; text-align: center;">
+    <!-- Login Form -->
+    <div id="loginForm" class="admin-form">
       <h2>🔐 Đăng nhập Admin</h2>
-      <input type="password" id="passwordAdmin" placeholder="Nhập: hoquocdz01" style="width: 100%; padding: 1rem; margin: 1rem 0; border: 2px solid #007bff; border-radius: 5px; font-size: 1.2rem;">
-      <br>
-      <button onclick="loginAdmin()" style="padding: 1rem 2rem; font-size: 1.2rem; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">🚀 ĐĂNG NHẬP</button>
+      <input type="password" id="passwordAdmin" placeholder="Nhập: hoquocdz01" maxlength="20">
+      <button onclick="loginAdmin()">🚀 Đăng nhập</button>
+      <p style="font-size: 0.9rem; color: #666; margin-top: 1rem;">Mật khẩu: <strong>hoquocdz01</strong> (đơn giản, thay đổi nếu cần)</p>
     </div>
 
-    <!-- Admin Panel HIDDEN -->
+    <!-- Admin Content -->
     <div id="adminContent" style="display: none;">
-      <div style="text-align: center; padding: 1rem; background: #007bff; color: white;">
-        <h2>✅ ĐÃ LOGIN - Quản lý Link</h2>
-        <button onclick="logout()" style="padding: 0.5rem 1rem; background: #dc3545;">Đăng xuất</button>
+      <div class="admin-header">
+        <h2>✅ Đã đăng nhập</h2>
+        <button onclick="logout()" class="logout-btn">🚪 Đăng xuất</button>
       </div>
       
-      <button onclick="showForm()" style="padding: 1rem 2rem; font-size: 1.1rem; background: #28a745; color: white; border: none; border-radius: 5px; margin: 1rem;">➕ Thêm Link Mới</button>
+      <button onclick="showForm()" class="add-btn">➕ Thêm Link Mới</button>
       
-      <form id="addForm" style="display: none; background: white; padding: 2rem; border-radius: 10px; margin: 1rem 0;">
-        <div style="margin-bottom: 1rem;">
+      <!-- Add Form -->
+      <form id="addForm" class="admin-form" style="display: none;">
+        <div class="form-group">
           <label>Tiêu đề:</label>
-          <input type="text" id="title" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px;">
+          <input type="text" id="title" required maxlength="200">
         </div>
-        <div style="margin-bottom: 1rem;">
-          <label>Link:</label>
-          <input type="url" id="url" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px;">
+        <div class="form-group">
+          <label>URL:</label>
+          <input type="url" id="url" required>
         </div>
-        <div style="margin-bottom: 1rem;">
+        <div class="form-group">
           <label>Danh mục:</label>
-          <select id="category" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px;">
+          <select id="category" required>
+            <option value="">Chọn...</option>
             <option value="Game">Game</option>
             <option value="Tool">Tool</option>
             <option value="Phần mềm">Phần mềm</option>
             <option value="Tài liệu">Tài liệu</option>
+            <option value="Khác">Khác</option>
           </select>
         </div>
-        <button type="submit" style="width: 100%; padding: 1rem; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 1.1rem;">💾 Lưu Link</button>
+        <button type="submit" class="save-btn">💾 Lưu Link</button>
       </form>
       
-      <div id="resourcesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem;"></div>
+      <!-- Admin List -->
+      <div id="resourcesList" class="admin-list">
+        <!-- Loaded by JS -->
+      </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
   <script>
-    console.log('=== ADMIN JS START ===');
-    
-    const supabaseUrl = 'https://huhyetvefyhlhyldkvis.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1aHlldmVmeWhsaHl5bGRrdmlzIiwicm9sZSI6ImF1dGgiLCJpYXQiOjE3MzgzMTY4OTQsImV4cCI6MjA1Mzg5Mjg5NH0.R_Kz8R6iRxAdw6Q1Y2z4zK8L4o7sX1uK0k9S4kJqQAA';
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
-    
-    let resources = [];
-    
-    console.log('Supabase ready');
-
+    // Admin-specific functions
     function loginAdmin() {
-      console.log('Login clicked');
-      const pass = document.getElementById('passwordAdmin').value;
-      if (pass === 'hoquocdz01') {
-        console.log('Password OK');
+      const password = document.getElementById('passwordAdmin').value;
+      if (password === 'hoquocdz01') {
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('adminContent').style.display = 'block';
-        loadResources();
+        loadAdminResources(); // From script.js
       } else {
-        alert('❌ Sai mật khẩu! Thử "hoquocdz01"');
+        alert('❌ Sai mật khẩu!');
+        document.getElementById('passwordAdmin').value = '';
       }
     }
 
@@ -90,72 +85,34 @@
 
     function showForm() {
       document.getElementById('addForm').style.display = 'block';
+      document.getElementById('addForm').scrollIntoView({ behavior: 'smooth' });
     }
 
-    async function loadResources() {
-      console.log('Loading resources...');
-      try {
-const { data, error } = await supabase.from('link').select('*');
-        if (error) throw error;
-        resources = data || [];
-        renderList();
-        console.log('Loaded', resources.length, 'items');
-      } catch (error) {
-        console.error('Load error:', error);
-        document.getElementById('resourcesList').innerHTML = '<p style="text-align: center; color: red;">❌ Lỗi DB: Tạo table "resources" Supabase hoặc check key</p>';
-      }
-    }
-
-    function renderList() {
-      const list = document.getElementById('resourcesList');
-      if (resources.length === 0) {
-        list.innerHTML = '<p style="text-align: center; color: #666;">📭 Chưa có link. Thêm ngay!</p>';
-        return;
-      }
-      list.innerHTML = resources.map(r => `
-        <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <h3>${r.title || 'No title'}</h3>
-          <a href="${r.url}" target="_blank" style="color: #007bff; word-break: break-all;">🔗 ${r.url}</a>
-          <p><strong>${r.category}</strong></p>
-          <div style="margin-top: 1rem;">
-            <button onclick="editItem('${r.id}')" style="background: #007bff; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; margin-right: 0.5rem;">Sửa</button>
-            <button onclick="deleteItem('${r.id}')" style="background: #dc3545; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px;">Xóa</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function deleteItem(id) {
-      if (confirm('Xóa link này?')) {
-const { error } = await supabase.from('link').delete().eq('id', id);
-        if (!error) loadResources();
-      }
-    }
-
-    function editItem(id) {
-      alert('Edit feature coming soon!');
-    }
-
-    document.getElementById('addForm').onsubmit = async function(e) {
+    // Add link handler
+    document.getElementById('addForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const newLink = {
-        title: document.getElementById('title').value,
-        url: document.getElementById('url').value,
+        title: document.getElementById('title').value.trim(),
+        url: document.getElementById('url').value.trim(),
         category: document.getElementById('category').value,
-        downloads: 0,
         created_at: new Date().toISOString()
       };
-      
-      const { error } = await supabase.from('resources').insert([newLink]);
-      if (!error) {
-        document.getElementById('addForm').style.display = 'none';
-        loadResources();
-        document.getElementById('title').value = '';
-        document.getElementById('url').value = '';
-      }
-    };
 
-    console.log('=== ADMIN JS READY ===');
+      try {
+        const { error } = await supabase.from('link').insert([newLink]);
+        if (error) throw error;
+        
+        // Reset & hide form
+        document.getElementById('addForm').reset();
+        document.getElementById('addForm').style.display = 'none';
+        
+        // Reload list
+        await loadAdminResources();
+        alert('✅ Đã thêm link mới!');
+      } catch (error) {
+        alert('❌ Lỗi thêm: ' + error.message + '\nKiểm tra Supabase RLS/columns.');
+      }
+    });
   </script>
 </body>
 </html>
