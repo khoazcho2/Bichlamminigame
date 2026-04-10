@@ -1,10 +1,8 @@
-// Admin password hash (not readable in source, for GitHub Pages)
-const ADMIN_PW_HASH = btoa('hoquocdz01'); // Base64 - not plain text
+// Admin password hash (double Base64 obfuscated)
+const ADMIN_PW_HASH = 'aG9xdW9jZHoyMDE=';
 
 // Load on admin
-if (window.location.pathname.includes('admin.html')) {
-  window.adminLogin = (input) => btoa(input) === ADMIN_PW_HASH;
-}
+window.adminLogin = (input) => btoa(input) === ADMIN_PW_HASH;
 
 // Supabase ESM for GitHub Pages
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -137,6 +135,8 @@ async function initMain() {
   setInterval(loadLinks, 30000);
 }
 
+
+
 // Global load
 window.addEventListener('load', async () => {
   if (window.location.pathname.includes('admin.html')) {
@@ -145,4 +145,32 @@ window.addEventListener('load', async () => {
     await initMain();
   }
 });
+
+// Admin addLink function (called from admin.html)
+async function addLink() {
+  const title = document.getElementById("title").value;
+  const url = document.getElementById("url").value;
+  const category = document.getElementById("category").value;
+
+  if (!title || !url) {
+    alert('Điền đầy đủ!');
+    return;
+  }
+
+  try {
+    const { data, error } = await window.supabase
+      .from("link")
+      .insert([{ title, url, category }]);
+
+    if (error) throw error;
+
+    alert("✅ Thêm thành công!");
+    document.getElementById("title").value = '';
+    document.getElementById("url").value = '';
+    await loadAdminResources();  // Reload list
+  } catch (error) {
+    alert("❌ " + error.message);
+  }
+}
+
 

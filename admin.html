@@ -3,125 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Thêm Link</title>
-  <style>
-    body { font-family: Arial; max-width: 600px; margin: 0 auto; padding: 20px; }
-    input, button { width: 100%; padding: 12px; margin: 10px 0; font-size: 16px; }
-    button { background: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px; }
-    button:hover { background: #218838; }
-    #list { margin-top: 30px; }
-    .delete-btn { background: #dc3545; width: auto; margin-left: 10px; }
-    .item { padding: 10px; background: #f8f9fa; margin: 10px 0; border-radius: 5px; }
-    h1 { text-align: center; }
-  </style>
+  <title>🔧 Admin - Quản Lý Link</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>🔧 Admin</h1>
-  
-  <input type="password" id="password" placeholder="Nhập mật khẩu admin">
-  <button onclick="checkPassword()">Đăng nhập</button>
+  <div class="container">
+    <div class="admin-header">
+      <img src="img/ChatGPT Image 18_33_23 9 thg 4, 2026.png" alt="Logo" class="logo">
+      <h1>🔧 Admin Panel</h1>
+      <button class="logout-btn" onclick="logout()">Thoát</button>
+    </div>
 
-  <div id="adminPanel" style="display:none;">
-    <h3>Thêm link mới:</h3>
-    <input type="text" id="title" placeholder="Tiêu đề">
-    <input type="url" id="url" placeholder="URL">
-    <select id="category">
-      <option value="Game">Game</option>
-      <option value="Tool">Tool</option>
-      <option value="Phần mềm">Phần mềm</option>
-      <option value="Tài liệu">Tài liệu</option>
-    </select>
-    <button onclick="addLink()">Thêm link</button>
-    
-    <h3>Danh sách link:</h3>
-    <div id="list"></div>
+    <!-- Login -->
+    <div id="loginForm" class="admin-form">
+      <h2>🔐 Đăng Nhập Admin</h2>
+      <div class="form-group">
+        <label>Mật khẩu:</label>
+        <input type="password" id="password" placeholder="Nhập hoquocdz01">
+      </div>
+      <button class="add-btn" onclick="checkPassword()">Đăng Nhập</button>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-form" style="display: none;">
+      <h2>➕ Thêm Link Mới</h2>
+      <div class="form-group">
+        <label>Tiêu đề:</label>
+        <input type="text" id="title" placeholder="VD: Google Drive Link">
+      </div>
+      <div class="form-group">
+        <label>URL:</label>
+        <input type="url" id="url" placeholder="https://drive.google.com/...">
+      </div>
+      <div class="form-group">
+        <label>Danh mục:</label>
+        <select id="category">
+          <option value="Game">Game</option>
+          <option value="Tool">Tool</option>
+          <option value="Phần mềm">Phần mềm</option>
+          <option value="Tài liệu">Tài liệu</option>
+        </select>
+      </div>
+      <button class="add-btn" onclick="addLink()">➕ Thêm Link</button>
+      
+      <h2>📋 Danh Sách Link</h2>
+      <div id="resourcesList" class="admin-list"></div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
   <script>
-    const supabaseUrl = "https://huhyetvefyhlhyldkvis.supabase.co";
-    const supabaseKey = "sb_publishable_40AA8unUr1HLIcgBn4gkFg_dvmCshjR"; 
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
     function checkPassword() {
       const pw = document.getElementById('password').value;
-      if (pw === 'hoquocdz01') {
+      if (window.adminLogin && window.adminLogin(pw)) {
+        document.getElementById('loginForm').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('password').style.display = 'none';
-        loadLinks();
+        loadAdminResources();
       } else {
-        alert('Sai mật khẩu!');
+        alert('❌ Sai mật khẩu!');
       }
     }
 
-    async function addLink() {
-      const title = document.getElementById("title").value;
-      const url = document.getElementById("url").value;
-      const category = document.getElementById("category").value;
-
-      if (!title || !url) {
-        alert('Điền đầy đủ!');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("link")
-        .insert([{ title, url, category, created_at: new Date().toISOString() }]);
-
-      if (error) {
-        alert("❌ " + error.message);
-      } else {
-        alert("✅ Thêm thành công!");
-        document.getElementById("title").value = '';
-        document.getElementById("url").value = '';
-        loadLinks();
-      }
+    function logout() {
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('adminPanel').style.display = 'none';
+      document.getElementById('password').value = '';
     }
 
-    async function loadLinks() {
-      const { data, error } = await supabase
-        .from("link")
-        .select("*")
-        .order('created_at', { ascending: false });
-
-      const list = document.getElementById("list");
-      
-      if (error) {
-        list.innerHTML = "❌ Lỗi: " + error.message;
-        return;
-      }
-
-      list.innerHTML = '';
-      if (!data || data.length === 0) {
-        list.innerHTML = "<p>Chưa có link.</p>";
-        return;
-      }
-
-      data.forEach((link, index) => {
-        list.innerHTML += `
-          <div class="item">
-            <strong>${link.title}</strong> - ${link.category} 
-            <a href="${link.url}" target="_blank">🔗</a>
-            <button class="delete-btn" onclick="deleteLink('${link.id}')">Xóa</button>
-          </div>
-        `;
-      });
-    }
-
-    async function deleteLink(id) {
-      if (!confirm('Xóa?')) return;
-      
-      const { error } = await supabase
-        .from("link")
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        alert("❌ " + error.message);
-      } else {
-        loadLinks();
-      }
-    }
+    // Auto-init after pw (script.js handles rest)
+    window.addEventListener('load', () => {
+      // Pw check in button
+    });
   </script>
 </body>
 </html>
