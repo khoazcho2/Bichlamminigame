@@ -33,7 +33,7 @@ Open http://localhost:3000
 3. Live: `https://username.github.io/repo`
 
 ## 🔧 Admin
-- PW: `hoquocdz01` (edit in admin.html)
+- PW: Lưu trong `admin-password.txt` (không lộ source)
 - Add: Form → Save
 - Delete: Buttons in list
 
